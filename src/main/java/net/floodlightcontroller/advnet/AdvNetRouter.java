@@ -51,7 +51,11 @@ import org.slf4j.LoggerFactory;
 public class AdvNetRouter implements IFloodlightModule, IOFMessageListener {
 
 	protected static final MACAddress MAGIC = MACAddress.valueOf("00:11:00:11:00:11");
-        // EDIT HERE
+        // MAC addresses of hosts
+    	protected static final MACAddress H1 = MACAddress.valueOf("00:00:00:00:00:01");
+    	protected static final MACAddress H2 = MACAddress.valueOf("00:00:00:00:00:02");
+    	protected static final MACAddress H3 = MACAddress.valueOf("00:00:00:00:00:03");
+    	protected static final MACAddress PX = MACAddress.valueOf("00:00:00:00:00:04");
 
 	protected Map<MACAddress, SwitchPort> _mac_to_switchport;
 
@@ -224,11 +228,26 @@ public class AdvNetRouter implements IFloodlightModule, IOFMessageListener {
 
 	private RouteMode
 	getCommMode(MACAddress src, MACAddress dst)
-	{
+    {
+		// Hosts 1 and 3 allowed to communicate by proxy
+		if((src.equals(H1) && dst.equals(H3)) ||
+		   (src.equals(H3) && dst.equals(H1))){
+			_log.info("Host 1 <--> Host 3...");
+			return RouteMode.ROUTE_PROXY;
+		}
+		// Hosts 1 and 2 are not allowed to communicate at all (Send a ROUTE_DROP)
+		else if((src.equals(H1) && dst.equals(H2)) ||
+			(src.equals(H2) && dst.equals(H1))){
+			_log.info("Host 1 <--> Host 2...");
+			return RouteMode.ROUTE_DROP;
 
-           // EDIT HERE
-
-	}
+		}
+		// Hosts allowed to communicate otherwise.
+		else{
+			_log.info("No rule, routing directly...");
+			return RouteMode.ROUTE_DIRECT; 
+		}
+    }
 
 	private void
 	create_route(
